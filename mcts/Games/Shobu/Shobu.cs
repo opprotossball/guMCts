@@ -10,10 +10,11 @@ namespace mcts.Games.Shobu
     public class Shobu : IGame
     {
         private bool whiteToGo;
-        private int[] white_player_white_board = new int[16];
-        public int[] white_player_black_board = new int[16];
-        private int[] black_player_white_board = new int[16];
-        private int[] black_player_black_board = new int[16];
+        private static readonly int nSquares = 16;
+        private int[] white_player_white_board = new int[nSquares];
+        public int[] white_player_black_board = new int[nSquares];
+        private int[] black_player_white_board = new int[nSquares];
+        private int[] black_player_black_board = new int[nSquares];
 
         public Shobu()
         {
@@ -23,17 +24,28 @@ namespace mcts.Games.Shobu
             ResetBoard(black_player_black_board);
         }
 
+        //private void ResetBoard(int[] board)
+        //{
+        //    for (int i = 0; i < board.Length; i++)
+        //    {
+        //        if (!ValidTile(i)) board[i] = 0;
+        //        else if (i / 8 == 2) board[i] = 1;
+        //        else if (i / 8 == 5) board[i] = -1;
+        //        else board[i] = 0;
+        //    }
+        //}
+
         private void ResetBoard(int[] board)
         {
-            int[] startingPos = [
-                1, 1, 1, 1,
-                0, 0, 0, 0,
-                0, 0, 0, 0,
-                -1, -1, -1, -1
-            ];
-            for (int i = 0; i < 16; i++) 
+            if (board.Length != 16)
             {
-                board[i] = startingPos[i];
+                throw new ArgumentException("");
+            }
+            for (int i = 0; i < 16; i++)
+            {
+                if (i < 4) board[i] = 1;
+                else if (i > 11) board[i] = -1;
+                else board[i] = 0;
             }
         }
 
@@ -51,36 +63,6 @@ namespace mcts.Games.Shobu
             }
         }
 
-        private IEnumerable<int> ShortMoves(int from)
-        {
-            for (int i = -1; i < 2; i++)
-            {
-                for (int j = -1; j < 2; j++)
-                {
-                    int to = from + i + (4 * j);
-                    if (ValidTile(to) && to != from) yield return to;
-                }
-            }
-        }
-
-        private IEnumerable<int> Moves(int from)
-        {
-            for (int i = -1; i < 2; i++)
-            {
-                for (int j = -1; j < 2; j++)
-                {
-                    int dir = i + (4 * j);
-                    if (ValidTile(from + dir) && from + dir != from) yield return from + dir; // short move
-                    if (ValidTile(from + (2 * dir)) && from + (2 * dir) != from) yield return from + (2 * dir); // long move
-                }
-            }
-        }
-
-        private bool ValidTile(int tile) => (tile >= 0 && tile < 16);
-        private bool ValidAggressive(int[] board, int from, int to)
-        {
-            return false;
-        }
 
         private int[] BoardForPlayer(bool whitePlayer, bool whiteBoard)
         {
@@ -89,47 +71,58 @@ namespace mcts.Games.Shobu
            if (!whitePlayer && whiteBoard) return black_player_white_board;
            return black_player_black_board;
         }
+        private bool ValidExtendedTile(int tile) => (tile > 15 && tile < 47 && tile % 8 > 1 && tile % 8 < 6);
+                 
+        private int ExtendedCoordinate(int tile) => 18 + (tile % 4) + 8 * (tile / 4);
 
-        private IEnumerable<Move> MovesForBoard(bool whiteHomeBoard)
+        private int ReducedCoordinate(int tile) => tile - 18 - (4 * ((tile - 18) / 8));
+
+        public IEnumerable<Move> ShortMovesForBoard(bool whiteBoard)
         {
-            List<Move> passiveOnly = new List<Move>();
-            int[] homeBoard = BoardForPlayer(whiteToGo, whiteHomeBoard);
-            int[] opponentBoard = BoardForPlayer(!whiteToGo, !whiteHomeBoard);
-            int piece = whiteToGo ? 1 : -1;
-            foreach (int from in PieceIterator(homeBoard, whiteToGo))
+            int[] passvieBoard = BoardForPlayer(whiteToGo, whiteBoard);
+            int[] agressvieBoard = BoardForPlayer(!whiteToGo, !whiteBoard);
+            // for each piece 
+            foreach (int piece in PieceIterator(passvieBoard, whiteToGo))
             {
-                foreach (int to in ShortMoves(from))
+                int fromExt = ExtendedCoordinate(piece);
+                // for each direction
+                foreach (int dir in Enum.GetValues(typeof(Direction)))
                 {
-                    if (homeBoard[to] == piece)
+                    int toExt = fromExt + dir;
+                    if (!ValidExtendedTile(toExt)) continue;
+                    int to = ReducedCoordinate(toExt);
+                    if (passvieBoard[to] != 0) continue;
+                    // for each piece on other board
+                    foreach (int aggresivePiece in PieceIterator(agressvieBoard, whiteToGo))
                     {
-                        Move move = new Move()
+                        int aggresiveFromExt = ExtendedCoordinate(aggresivePiece);
+                        int aggresiveToExt = aggresiveFromExt + dir;
+                        if (!ValidExtendedTile(aggresiveToExt)) continue;
+                        int aggresiveTo = ReducedCoordinate(aggresiveToExt);
+                        // move blocked by friendly stone
+                        if (agressvieBoard[aggresiveTo] == agressvieBoard[aggresivePiece]) continue;
+                        // move blocked by enemy which can't be pushed
+                        if (agressvieBoard[aggresiveTo] != 0 && !CanBePushed(agressvieBoard, aggresiveTo, dir)) continue;
+                        yield return new Move()
                         {
-                            WhitePassive = whiteHomeBoard,
-                            PassiveFrom = from,
-                            PassiveTo = to
+                            WhitePassiveBoard = whiteBoard,
+                            DoubleMove = false,
+                            PassiveFrom = piece,
+                            AggressiveFrom = aggresivePiece,
+                            Direction = (Direction)dir
                         };
-                        passiveOnly.Add(move);
                     }
                 }
             }
-            foreach (Move passiveMove in passiveOnly)
-            {
-                int dir = passiveMove.PassiveTo - passiveMove.PassiveFrom;
-                foreach (int from in PieceIterator(opponentBoard, whiteToGo))
-                {
-                    int to = from + dir;
-                    if (!ValidTile(to) || opponentBoard[to] == piece) continue;
-                    if (opponentBoard[to] == -piece && ValidTile(to + dir) && opponentBoard[to + dir] != 0) continue;
-                    Move move = new Move()
-                    {
-                        WhitePassive = passiveMove.WhitePassive,
-                        PassiveFrom = passiveMove.PassiveFrom,
-                        PassiveTo = passiveMove.PassiveTo,
-                        AggressiveFrom = from
-                    };
-                    yield return move;
-                }
-            }
+        }
+
+        private bool CanBePushed(int[] board, int piece, int dir)
+        {
+            int fromExt = ExtendedCoordinate(piece);
+            int toExt = fromExt + dir;
+            if (!ValidExtendedTile(toExt)) return true;
+            if (board[ReducedCoordinate(toExt)] == 0) return true;
+            return false;
         }
 
         public List<IMove> GetLegalMoves()
