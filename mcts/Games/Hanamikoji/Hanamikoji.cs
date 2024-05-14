@@ -168,7 +168,7 @@ namespace mcts.Games.Hanamikoji
             throw new NotImplementedException();
         }
 
-        public IGameResult Result(int playerId)
+        public GameResult Result(int playerId)
         {
             throw new NotImplementedException();
         }
@@ -179,6 +179,11 @@ namespace mcts.Games.Hanamikoji
         }
 
         List<IMove> IGame.GetLegalMoves()
+        {
+            throw new NotImplementedException();
+        }
+
+        public IGame HistorylessCopy()
         {
             throw new NotImplementedException();
         }

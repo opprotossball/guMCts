@@ -2,7 +2,7 @@
 
 namespace mcts.Bot
 {
-    public interface IMcts
+    public interface IPlayer
     {
         public IMove MakeMove(IGame game);
     }
