@@ -10,6 +10,12 @@ namespace mcts.Mcts
         public Node[]? children;
         public double scoreSum;
         public int simulations;
+        private List<IMove>? _cachedMoves;
+        private List<IMove> CachedMoves
+        {
+            get { EnsureMovesCached(); return _cachedMoves; }
+            set { _cachedMoves = value; }
+        }
         public bool IsLeaf 
         {
             get => children == null; 
@@ -31,7 +37,8 @@ namespace mcts.Mcts
         // initializes children array, adds & returns Node coressponding to first valid move
         public Node Expand()
         {
-            List<IMove> moves = position.GetLegalMoves();
+            //List<IMove> moves = position.GetLegalMoves();
+            List<IMove> moves = CachedMoves;
             children = new Node[moves.Count];
             // add first node
             IGame newPosition = position.HistorylessCopy();
@@ -49,7 +56,8 @@ namespace mcts.Mcts
                 return Expand();
             }
             // move caching will be needed
-            List<IMove> moves = position.GetLegalMoves();
+            //List<IMove> moves = position.GetLegalMoves();
+            List<IMove> moves = CachedMoves;
             if (!FullyExplored)
             {
                 IGame newPosition = position.HistorylessCopy();
@@ -113,6 +121,12 @@ namespace mcts.Mcts
                     maxDepth = childDepth;
             }
             return maxDepth + 1;
+        }
+
+        private void EnsureMovesCached()
+        {
+            if (_cachedMoves != null) return;
+            _cachedMoves = position.GetLegalMoves();
         }
     }
 }
