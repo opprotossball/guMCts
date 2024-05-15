@@ -44,7 +44,10 @@ namespace mcts.Mcts
         public Node Select(Func<Node, double> selectionPolicy)
         {
             // could be IsLeaf instead
-            if (children == null) return this;
+            if (children == null)
+            {
+                return Expand();
+            }
             // move caching will be needed
             List<IMove> moves = position.GetLegalMoves();
             if (!FullyExplored)
@@ -53,7 +56,7 @@ namespace mcts.Mcts
                 newPosition.MakeMove(moves[NextToExplore]);
                 children[NextToExplore] = new Node(newPosition, this);
                 if (++NextToExplore == children.Length) FullyExplored = true;
-                return children[NextToExplore].Select(selectionPolicy);
+                return children[NextToExplore - 1].Select(selectionPolicy);
             }
             else
             {
@@ -82,6 +85,34 @@ namespace mcts.Mcts
                 scoreSum += result.Score;
             }
             parent.Backpropagate(position);
+        }
+
+        public int SubtreeSize()
+        {
+            int result = 0; 
+            if (children == null) return result;
+            foreach (Node node in children)
+            {
+                if (node == null) continue;
+                result += node.SubtreeSize();
+            }
+
+            return result + 1;
+        }
+
+        public int MaxDepth()
+        {
+            if (children == null)
+                return 1;
+            int maxDepth = children[0].MaxDepth();
+            for (int i = 1; i < children.Length; i++)
+            {
+                if (children[i] == null) continue;
+                int childDepth = children[i].MaxDepth();
+                if (childDepth > maxDepth)
+                    maxDepth = childDepth;
+            }
+            return maxDepth + 1;
         }
     }
 }

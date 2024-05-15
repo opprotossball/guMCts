@@ -48,7 +48,7 @@ namespace mcts.Games.Shobu
         {
             List<IMove> res = new List<IMove>();
             for (int whiteBoard = 0; whiteBoard < 2; whiteBoard++)
-                for  (int aggresiveHome = 0;  aggresiveHome < 2; aggresiveHome++)
+                for (int aggresiveHome = 0; aggresiveHome < 2; aggresiveHome++)
                     for (int doubleMoves = 0; doubleMoves < 2; doubleMoves++)
                         foreach (Move m in MovesForBoard(whiteBoard == 1, aggresiveHome == 1, doubleMoves == 1))
                             res.Add(m);
@@ -57,11 +57,12 @@ namespace mcts.Games.Shobu
 
         public void MakeMove(IMove move)
         {
-            if (!(move is Move)) throw new ArgumentException(nameof(move).ToString() + "Invalid move type");
+            if (winner != 0) throw new InvalidOperationException("Game has ended!");
+            if (!(move is Move)) throw new ArgumentException(nameof(move).ToString() + " Is invalid move type!");
             Move m = (Move)move;
             // choose boards
             int[] passiveBoard = BoardForPlayer(whiteToGo, m.WhitePassiveBoard);
-            int[] aggressiveBoard = BoardForPlayer(whiteToGo ^ m.AggressiveHomeBoard, !m.WhitePassiveBoard);
+            int[] aggressiveBoard = BoardForPlayer(whiteToGo == m.AggressiveHomeBoard, !m.WhitePassiveBoard);
             // validate move
             if (!CanBePlayed(passiveBoard, m.PassiveFrom, (int)m.Direction, m.DoubleMove, false))
             {
@@ -69,35 +70,41 @@ namespace mcts.Games.Shobu
             }
             if (!CanBePlayed(aggressiveBoard, m.AggressiveFrom, (int)m.Direction, m.DoubleMove, true))
             {
-                throw new ArgumentException("Passive move cannot be played!");
+                throw new ArgumentException("Aggressive move cannot be played!");
             }
             int dir = (int)m.Direction;
             int diff = m.DoubleMove ? 2 * dir : dir;
             // make passive move
             passiveBoard[m.PassiveFrom + diff] = passiveBoard[m.PassiveFrom];
             passiveBoard[m.PassiveFrom] = 0;
+
+            // push
+            int pushedFrom = -1;
+            if (aggressiveBoard[m.AggressiveFrom + diff] != 0)
+            {
+                pushedFrom = m.AggressiveFrom + diff;
+            }
+            else if (m.DoubleMove && aggressiveBoard[m.AggressiveFrom + dir] != 0)
+            {
+                pushedFrom = m.AggressiveFrom + dir;
+            }
+            if (pushedFrom != -1)
+            {
+                int pushedTo = m.AggressiveFrom + diff + dir;
+                int pushedPiece = aggressiveBoard[pushedFrom];
+                aggressiveBoard[pushedFrom] = 0;
+                if (aggressiveBoard[pushedTo] == BorderTile)
+                {
+                    CheckWinner(aggressiveBoard);
+                }
+                else
+                {
+                    aggressiveBoard[pushedTo] = pushedPiece;
+                }
+            }
             // make aggressive move
             aggressiveBoard[m.AggressiveFrom + diff] = aggressiveBoard[m.AggressiveFrom];
             aggressiveBoard[m.AggressiveFrom] = 0;
-            // push
-            int pushedFrom = 0;
-            for (int t = m.AggressiveFrom + dir; t <= diff + dir; t += dir)
-            {
-                if (aggressiveBoard[t] != 0)
-                {
-                    int pushedPiece = aggressiveBoard[t];
-                    aggressiveBoard[t] = 0;
-                    if (aggressiveBoard[m.AggressiveFrom + diff + dir] == BorderTile)
-                    {
-                        CheckWinner(aggressiveBoard);
-                    }
-                    else
-                    {
-                        aggressiveBoard[m.AggressiveFrom + diff + dir] = pushedPiece;
-                    }
-                    pushedFrom = t;
-                }
-            }
             // change active player
             whiteToGo = !whiteToGo;
             // add to history
@@ -105,7 +112,7 @@ namespace mcts.Games.Shobu
             if (IsValidTile(pushedFrom))
             {
                 historic = new HistoricMove(m, pushedFrom);
-            } 
+            }
             else
             {
                 historic = new HistoricMove(m);
@@ -117,11 +124,15 @@ namespace mcts.Games.Shobu
 
         public GameResult Result(int playerId)
         {
+            if (playerId != 0 && playerId != 1)
+            {
+                throw new ArgumentException("Player ID must be 0 or 1");
+            }
             int score = 0;
             int player = playerId == 0 ? -1 : 1;
             if (winner != 0)
             {
-                score = player == winner ? 1 : -1; 
+                score = player == winner ? 1 : -1;
             }
             return new GameResult()
             {
@@ -137,9 +148,16 @@ namespace mcts.Games.Shobu
 
         private void CheckWinner(int[] board)
         {
-            if (board.Count(x => x == -1) == 0) winner = 1;
-            else if (board.Count(x => x == 1) == 0) winner = -1;
-            else winner = 0;
+            int whiteStones = 0;
+            int blackStones = 0;
+            foreach (int i in BoardIterator())
+            {
+                if (board[i] == -1) blackStones++;
+                if (board[i] == 1) whiteStones++;
+
+            }
+            if (whiteStones == 0) winner = -1;
+            if (blackStones == 0) winner = 1;
         }
 
         private bool IsValidTile(int tile) => (tile > 15 && tile < 47 && tile % 8 > 1 && tile % 8 < 6);
@@ -157,11 +175,11 @@ namespace mcts.Games.Shobu
 
         public IEnumerable<int> BoardIterator()
         {
-            for (int i = 0; i < 4; i++) 
-                for (int j = 0; j < 4; j++) 
-                    yield return j + 18 + (8 * i); 
+            for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 4; j++)
+                    yield return j + 18 + (8 * i);
         }
-        
+
         private IEnumerable<int> PieceIterator(int[] board, bool whitePlayer)
         {
             int piece = whitePlayer ? 1 : -1;
@@ -169,7 +187,7 @@ namespace mcts.Games.Shobu
                 if (board[i] == piece) yield return i;
         }
 
-        private bool EmptyOrBorder(int tile) => tile == 0 || tile == BorderTile; 
+        private bool EmptyOrBorder(int tile) => tile == 0 || tile == BorderTile;
 
         private bool CanBePlayed(int[] board, int from, int dir, bool doubleMove, bool aggressive)
         {
@@ -184,7 +202,7 @@ namespace mcts.Games.Shobu
                 if (board[to] != 0) return false;
                 // jumps over piece
                 if (doubleMove && board[from + dir] != 0) return false;
-            } 
+            }
             else
             {
                 if (doubleMove)
@@ -211,7 +229,7 @@ namespace mcts.Games.Shobu
         public IEnumerable<Move> MovesForBoard(bool whitePassiveBoard, bool homeAggressiveBoard, bool doubleMoves)
         {
             int[] passiveBoard = BoardForPlayer(whiteToGo, whitePassiveBoard);
-            int[] aggressiveBoard = BoardForPlayer(whiteToGo ^ homeAggressiveBoard, !whitePassiveBoard);
+            int[] aggressiveBoard = BoardForPlayer(whiteToGo == homeAggressiveBoard, !whitePassiveBoard);
             // for each piece
             foreach (int passiveFrom in PieceIterator(passiveBoard, whiteToGo))
             {
@@ -219,7 +237,7 @@ namespace mcts.Games.Shobu
                 foreach (int dir in Enum.GetValues(typeof(Direction)))
                 {
                     // pasive move can't be played
-                    if (!CanBePlayed(passiveBoard, passiveFrom, dir, doubleMoves, false)) continue; 
+                    if (!CanBePlayed(passiveBoard, passiveFrom, dir, doubleMoves, false)) continue;
                     // for each piece on opponents board 
                     foreach (int aggressiveFrom in PieceIterator(aggressiveBoard, whiteToGo))
                     {
@@ -243,10 +261,10 @@ namespace mcts.Games.Shobu
 
         private int[] BoardForPlayer(bool whitePlayer, bool whiteBoard)
         {
-           if (whitePlayer && whiteBoard) return whitePlayerWhiteBoard;
-           if (whitePlayer && !whiteBoard) return whitePlayerBlackBoard;
-           if (!whitePlayer && whiteBoard) return blackPlayerWhiteBoard;
-           return blackPlayerBlackBoard;
+            if (whitePlayer && whiteBoard) return whitePlayerWhiteBoard;
+            if (whitePlayer && !whiteBoard) return whitePlayerBlackBoard;
+            if (!whitePlayer && whiteBoard) return blackPlayerWhiteBoard;
+            return blackPlayerBlackBoard;
         }
 
         public int[] BoardArrayForPlayer(bool whitePlayer, bool whiteBoard)
@@ -254,8 +272,11 @@ namespace mcts.Games.Shobu
             int[] res = new int[16];
             int i = 0;
             int[] board = BoardForPlayer(whitePlayer, whiteBoard);
-            foreach (int j in BoardIterator()) res[i++] = board[j]; 
+            foreach (int j in BoardIterator()) res[i++] = board[j];
             return res;
         }
+
+        public static int ArrayToBoardTile(int tile) => 18 + (tile % 4) + 8 * (tile / 4);
+        public static int BoardToArrayTile(int tile) => tile - 18 - (4 * ((tile - 18) / 8));
     }
 }
