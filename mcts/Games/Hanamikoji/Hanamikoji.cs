@@ -187,5 +187,10 @@ namespace mcts.Games.Hanamikoji
         {
             throw new NotImplementedException();
         }
+
+        public IMove PseudoRandomMove(Random random)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

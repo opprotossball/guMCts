@@ -15,6 +15,7 @@ namespace mcts.Mcts
         private Stopwatch stopwatch;
         private Random random;
         private int simulationTimeOuts;
+        private int stalemates;
         private long timeElapsed;
 
         public Mcts(Func<Node, double> selectionPolicy, int msPerMove) 
@@ -29,6 +30,7 @@ namespace mcts.Mcts
         {
             stopwatch.Restart();
             simulationTimeOuts = 0;
+            stalemates = 0;
             timeElapsed = 0;
             Node root = new Node(game, null);
             while (stopwatch.ElapsedMilliseconds < msPerMove)
@@ -78,9 +80,19 @@ namespace mcts.Mcts
                     simulationTimeOuts++;
                     break;
                 }
-                List<IMove> moves = game.GetLegalMoves();
-                if (moves.Count > 0) 
-                game.MakeMove(moves[random.Next(moves.Count)]);
+                //List<IMove> moves = game.GetLegalMoves();
+                //if (moves.Count > 0) 
+                //game.MakeMove(moves[random.Next(moves.Count)]);
+                try
+                {
+                    IMove move = game.PseudoRandomMove(random);
+                    game.MakeMove(move);
+                }
+                catch (InvalidOperationException e)
+                {
+                    stalemates += 1;
+                    return game;
+                }
                 result = game.Result(playerId);
             }
             return game;

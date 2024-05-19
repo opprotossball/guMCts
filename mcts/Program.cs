@@ -8,6 +8,12 @@ Mcts mcts = new Mcts(SelectionPolicies.DefaultSelectionPolicy, 10000);
 Move move = (Move)mcts.MakeMove(game);
 Console.WriteLine(move);
 
-//ShobuAnalysis.SaveToCsv(ShobuAnalysis.GameLength(500), "C:\\Users\\janst\\source\\studia\\dypl\\Analysis\\shobu_lengths.csv");
+//ShobuAnalysis.SaveLengths(ShobuAnalysis.GameLength(500), "C:\\Users\\janst\\source\\studia\\dypl\\Analysis\\shobu_lengths_2.csv");
 
 //ShobuAnalysis.SaveToCsv(ShobuAnalysis.WinRate(500), "C:\\Users\\janst\\source\\studia\\dypl\\Analysis\\shobu_wins.csv");
+
+//ShobuAnalysis.SaveToCsv(ShobuAnalysis.BranchingFactor(500), "C:\\Users\\janst\\source\\studia\\dypl\\Analysis\\shobu_branching.csv");
+
+//ShobuAnalysis.VersionConsistenceTest();
+
+//ShobuAnalysis.PseudoRandomGame(500);

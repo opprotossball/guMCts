@@ -16,7 +16,9 @@ namespace mcts.Games.Shobu
             String s = WhitePassiveBoard ? "passive: white" : "passive: black";
             s += " board, " + PassiveFrom.ToString() + " " + Direction.ToString();
             if (DoubleMove) s += " double";
-            s += " | aggressive: " + AggressiveFrom.ToString();
+            s += " | aggressive: ";
+            s += AggressiveHomeBoard ? "home" : "opponents";
+            s += "board, " + AggressiveFrom.ToString();
             return s;
         }
 
@@ -31,6 +33,18 @@ namespace mcts.Games.Shobu
                 DoubleMove = move.DoubleMove,
                 Direction = move.Direction
             };
+        }
+
+        override public int GetHashCode()
+        {
+            int hash = 23;
+            hash = hash * 17 + WhitePassiveBoard.GetHashCode();
+            hash = hash * 17 + AggressiveHomeBoard.GetHashCode();
+            hash = hash * 17 + PassiveFrom.GetHashCode();
+            hash = hash * 17 + AggressiveFrom.GetHashCode();
+            hash = hash * 17 + DoubleMove.GetHashCode();
+            hash = hash * 17 + Direction.GetHashCode();
+            return hash;
         }
     }
 }

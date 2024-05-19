@@ -12,5 +12,6 @@ namespace mcts.Games.Interfaces
         //position hash
         public int GetHashCode();
         public IGame HistorylessCopy();
+        public IMove PseudoRandomMove(Random random);
     }
 }
