@@ -2,11 +2,14 @@
 using mcts.Games.Interfaces;
 using mcts.Games.Shobu;
 using mcts.Mcts;
+using mcts.Tournaments;
+using mcts.Tournaments.Bots;
+using System.Reflection.Metadata;
 
-Shobu game = new Shobu();
-Mcts mcts = new Mcts(SelectionPolicies.DefaultSelectionPolicy, 10000);
-Move move = (Move)mcts.MakeMove(game);
-Console.WriteLine(move);
+//Shobu game = new Shobu();
+//Mcts mcts = new Mcts(SelectionPolicies.DefaultSelectionPolicy, 10000);
+//Move move = (Move)await mcts.MakeMove(game, 10000);
+//Console.WriteLine(move);
 
 //ShobuAnalysis.SaveLengths(ShobuAnalysis.GameLength(500), "C:\\Users\\janst\\source\\studia\\dypl\\Analysis\\shobu_lengths_2.csv");
 
@@ -17,3 +20,13 @@ Console.WriteLine(move);
 //ShobuAnalysis.VersionConsistenceTest();
 
 //ShobuAnalysis.PseudoRandomGame(500);
+
+Type gameType = typeof(Shobu);
+List<Type> playerTypes = new List<Type>() { typeof(RandomBot), typeof(Mcts) };
+GameSettings settings = new GameSettings()
+{
+    msPerMove = 30000,
+    maxMoves = 500,
+};
+int nMatches = 2;
+await Arena.Tournament(gameType, playerTypes, nMatches, settings, "C:\\Users\\janst\\OneDrive\\Dokumenty\\Studia\\dypl\\shobuTournament");

@@ -1,6 +1,9 @@
 ﻿using mcts.Bot;
 using mcts.Games.Interfaces;
+using mcts.Tournaments;
+using Newtonsoft.Json;
 using System.Diagnostics;
+using System.Xml;
 
 namespace mcts.Mcts
 {
@@ -9,7 +12,7 @@ namespace mcts.Mcts
         // add simulation policy
         private readonly Func<Node, double> selectionPolicy;
         // add time control
-        private readonly int msPerMove;
+        private int msPerMove;
         // make parameter
         private readonly int maxSimulationDepth = 300;
         private Stopwatch stopwatch;
@@ -17,6 +20,14 @@ namespace mcts.Mcts
         private int simulationTimeOuts;
         private int stalemates;
         private long timeElapsed;
+        private Logger logger = new Logger();
+
+        public Mcts()
+        {
+            selectionPolicy = SelectionPolicies.DefaultSelectionPolicy;
+            random = new Random();
+            stopwatch = new Stopwatch();
+        }
 
         public Mcts(Func<Node, double> selectionPolicy, int msPerMove) 
         { 
@@ -26,14 +37,15 @@ namespace mcts.Mcts
             stopwatch = new Stopwatch();
         }
 
-        public IMove MakeMove(IGame game)
+        public async Task<IMove> MakeMove(IGame game, int msPerMove)
         {
             stopwatch.Restart();
+            this.msPerMove = msPerMove;
             simulationTimeOuts = 0;
             stalemates = 0;
             timeElapsed = 0;
             Node root = new Node(game, null);
-            while (stopwatch.ElapsedMilliseconds < msPerMove)
+            while (stopwatch.ElapsedMilliseconds < msPerMove * 0.975)
             {
                 Iteration(root);
             }
@@ -54,8 +66,7 @@ namespace mcts.Mcts
                     bestMove = i;
                 }
             }
-            // move elswhere
-            Console.WriteLine(DebugLog(root));
+            logger.Log(DebugLog(root));
             return root.position.GetLegalMoves()[bestMove];
         }
 
@@ -100,36 +111,42 @@ namespace mcts.Mcts
 
         public string DebugLog(Node root)
         {
-            string log = "\n---- MCTS log ----";
-            log += $"\ntime per move [ms]: {msPerMove}";
-            log += $"\nsimulation depth limit: {maxSimulationDepth}";
-
-            log += $"\n\ntime elapsed [ms]: {timeElapsed}";
-            int numOfNodes = root.SubtreeSize();
-            log += $"\nnumber of nodes: {numOfNodes}";
-            log += $"\nroot simulations: {root.simulations}";
-            log += $"\nsimulation timeouts: {simulationTimeOuts}";
-            int maxDepth = root.MaxDepth();
-            log += $"\nmax depth: {maxDepth}";
-            double maxAvgScore = int.MinValue;
-            double avgAvgScore = 0;
-            int maxSimulations = 0;
+            var debugInfo = new MctsLogInfo
+            {
+                TimePerMove = msPerMove,
+                SimulationDepthLimit = maxSimulationDepth,
+                TimeElapsed = timeElapsed,
+                NumberOfNodes = root.SubtreeSize(),
+                RootSimulations = root.simulations,
+                SimulationTimeouts = simulationTimeOuts,
+                MaxDepth = root.MaxDepth(),
+                MaxAverageScore = double.MinValue,
+                MeanAverageScore = 0,
+                MaxSimulations = 0,
+                FirstMovesConsidered = 0
+            };
+            double totalAverageScore = 0;
             int nodes = 0;
             foreach (Node node in root.children)
             {
                 if (node == null) continue;
-                maxAvgScore = Math.Max(maxAvgScore, node.scoreSum / node.simulations);
-                maxSimulations = Math.Max(maxSimulations, node.simulations);
-                avgAvgScore += node.scoreSum / node.simulations;
+                debugInfo.MaxAverageScore = Math.Max(debugInfo.MaxAverageScore, node.scoreSum / node.simulations);
+                debugInfo.MaxSimulations = Math.Max(debugInfo.MaxSimulations, node.simulations);
+                totalAverageScore += node.scoreSum / node.simulations;
                 nodes++;
             }
-            avgAvgScore /= nodes;
-            log += $"\n\nfirst moves considered: {nodes}";
-            log += $"\nmax average score: {maxAvgScore}";
-            log += $"\nmean average score: {Math.Round(avgAvgScore, 2)}";
-            log += $"\nmax simulations: {maxSimulations}";
-            log += "\n-----------------\n";
-            return log;
+            if (nodes > 0)
+            {
+                debugInfo.MeanAverageScore = Math.Round(totalAverageScore / nodes, 2);
+                debugInfo.FirstMovesConsidered = nodes;
+            }
+            string logJson = JsonConvert.SerializeObject(debugInfo, Newtonsoft.Json.Formatting.Indented);
+            return logJson;
+        }
+
+        public void UseLogger(Logger logger)
+        {
+            this.logger = logger;
         }
     }
 }

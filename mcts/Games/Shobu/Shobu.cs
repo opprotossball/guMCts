@@ -384,6 +384,7 @@ namespace mcts.Games.Shobu
             return moves[random.Next(moves.Count)];
         }
 
+        public bool IsOverForPlayers() => winner != 0;
         public static int ArrayToBoardTile(int tile) => 18 + (tile % 4) + 8 * (tile / 4);
         public static int BoardToArrayTile(int tile) => tile - 18 - (4 * ((tile - 18) / 8));
     }

@@ -13,13 +13,17 @@ namespace mcts.Games.Shobu
 
         public override string ToString()
         {
-            String s = WhitePassiveBoard ? "passive: white" : "passive: black";
-            s += " board, " + PassiveFrom.ToString() + " " + Direction.ToString();
-            if (DoubleMove) s += " double";
-            s += " | aggressive: ";
-            s += AggressiveHomeBoard ? "home" : "opponents";
-            s += "board, " + AggressiveFrom.ToString();
-            return s;
+            string notation = "";
+            if (DoubleMove) notation += "2";
+            foreach (char c in Direction.ToString())
+            {
+                if (char.IsUpper(c)) { notation += c; }
+            }
+            notation += WhitePassiveBoard ? "w" : "b";
+            notation += Shobu.BoardToArrayTile(PassiveFrom);
+            notation += AggressiveHomeBoard ? "h" : "f";
+            notation += Shobu.BoardToArrayTile(AggressiveFrom);
+            return notation;
         }
 
         public static Move DeepCopy(Move move)
@@ -33,6 +37,17 @@ namespace mcts.Games.Shobu
                 DoubleMove = move.DoubleMove,
                 Direction = move.Direction
             };
+        }
+
+        public string LongNotation()
+        {
+            string s = WhitePassiveBoard ? "passive: white" : "passive: black";
+            s += " board, " + PassiveFrom.ToString() + " " + Direction.ToString();
+            if (DoubleMove) s += " double";
+            s += " | aggressive: ";
+            s += AggressiveHomeBoard ? "home" : "opponents";
+            s += "board, " + AggressiveFrom.ToString();
+            return s;
         }
 
         override public int GetHashCode()

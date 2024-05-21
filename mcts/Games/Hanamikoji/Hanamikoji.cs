@@ -192,5 +192,10 @@ namespace mcts.Games.Hanamikoji
         {
             throw new NotImplementedException();
         }
+
+        public bool IsOverForPlayers()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

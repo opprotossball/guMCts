@@ -50,6 +50,10 @@ namespace mcts.Mcts
 
         public Node Select(Func<Node, double> selectionPolicy)
         {
+            if (position.IsOverForPlayers())
+            {
+                return this;
+            }
             // could be IsLeaf instead
             if (children == null)
             {
