@@ -244,6 +244,18 @@ namespace mcts.Games.Shobu
                     yield return j + 18 + (8 * i);
         }
 
+        private IEnumerable<int> DirectionIterator() 
+        {
+            yield return -8;
+            yield return -7;
+            yield return 1;
+            yield return 9;
+            yield return 8;
+            yield return 7;
+            yield return -1;
+            yield return -9;
+        }
+
         private IEnumerable<int> PieceIterator(bool whitePlayer, bool whiteBoard, bool whiteHome)
         {
             foreach (int tile in PieceList(whitePlayer, whiteBoard, whiteHome))
@@ -297,7 +309,7 @@ namespace mcts.Games.Shobu
             foreach (int passiveFrom in PieceIterator(whiteToGo, whitePassiveBoard, whiteToGo))
             {
                 // for each direction
-                foreach (int dir in Enum.GetValues(typeof(Direction)))
+                foreach (int dir in DirectionIterator())
                 {
                     // pasive move can't be played
                     if (!CanBePlayed(passiveBoard, passiveFrom, dir, doubleMoves, false)) continue;
@@ -356,8 +368,8 @@ namespace mcts.Games.Shobu
                 if (aggressivePieces.Count == 0) continue;
                 int aggressiveFrom = aggressivePieces[random.Next(aggressivePieces.Count)];
 
-                var dirs = Enum.GetValues(typeof(Direction));
-                Direction direction = (Direction)random.Next(dirs.Length);
+                var dirs = DirectionIterator().ToList();
+                Direction direction = (Direction)random.Next(dirs.Count);
 
                 int[] passiveBoard = BoardForPlayer(whiteToGo, whiteBoard);
                 int[] aggressiveBoard = BoardForPlayer(whiteToGo == aggressiveHome, !whiteBoard);
