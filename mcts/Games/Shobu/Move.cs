@@ -13,8 +13,7 @@ namespace mcts.Games.Shobu
 
         public override string ToString()
         {
-            string notation = "";
-            if (DoubleMove) notation += "2";
+            string notation = DoubleMove ? "2" : "";
             foreach (char c in Direction.ToString())
             {
                 if (char.IsUpper(c)) { notation += c; }

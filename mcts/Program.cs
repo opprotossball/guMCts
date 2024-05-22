@@ -4,7 +4,6 @@ using mcts.Games.Shobu;
 using mcts.Mcts;
 using mcts.Tournaments;
 using mcts.Tournaments.Bots;
-using System.Reflection.Metadata;
 
 //Shobu game = new Shobu();
 //Mcts mcts = new Mcts(SelectionPolicies.DefaultSelectionPolicy, 10000);
@@ -22,11 +21,11 @@ using System.Reflection.Metadata;
 //ShobuAnalysis.PseudoRandomGame(500);
 
 Type gameType = typeof(Shobu);
-List<Type> playerTypes = new List<Type>() { typeof(RandomBot), typeof(Mcts) };
+List<Type> playerTypes = new List<Type>() { typeof(Mcts), typeof(Mcts) };
 GameSettings settings = new GameSettings()
 {
     msPerMove = 30000,
-    maxMoves = 500,
+    maxMoves = 300,
 };
-int nMatches = 2;
-await Arena.Tournament(gameType, playerTypes, nMatches, settings, "C:\\Users\\janst\\OneDrive\\Dokumenty\\Studia\\dypl\\shobuTournament");
+int nMatches = 8;
+await Arena.Tournament(gameType, playerTypes, nMatches, settings, "C:\\Users\\janst\\OneDrive\\Dokumenty\\Studia\\dypl\\both");

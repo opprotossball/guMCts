@@ -1,6 +1,7 @@
 ﻿using mcts.Bot;
 using mcts.Games.Interfaces;
 using Newtonsoft.Json;
+using System;
 
 namespace mcts.Tournaments
 {
@@ -9,15 +10,41 @@ namespace mcts.Tournaments
         public static async Task Tournament(Type gameType, List<Type> playerTypes, int nMatches, GameSettings gameSettings, string logDir)
         {
             Logger logger = new Logger(logDir + "\\tournamentLog.txt");
+
+            string startDate = String.Format("{0:u}", DateTime.Now.ToString());
+            logger.Log($"Started {startDate}");
+            Console.WriteLine(DateTime.Now.ToString("HH:mm:ss"));
+
+            int maxConcurrent = Environment.ProcessorCount;
+            Console.WriteLine($"{maxConcurrent} processors found");
+            SemaphoreSlim semaphoreSlim = new SemaphoreSlim(maxConcurrent);
             int matchId = -1;
             List<Task> matches = new List<Task>();
+
             while (++matchId < nMatches)
             {
                 int currentMatch = matchId;
-                Task match = Task.Run(() => PlayMatch(currentMatch, gameType, playerTypes, gameSettings, logDir, logger));
+                await semaphoreSlim.WaitAsync();
+                Task match = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await PlayMatch(currentMatch, gameType, playerTypes, gameSettings, logDir, logger);
+                    }
+                    finally
+                    {
+                        semaphoreSlim.Release();
+                    }
+                    
+                });
                 matches.Add(match);
             }
+
             await Task.WhenAll(matches);
+
+            Console.WriteLine(DateTime.Now.ToString("HH:mm:ss"));
+            string endDate = String.Format("{0:u}", DateTime.Now.ToString());
+            logger.Log($"Started {endDate}");
         }
 
         private static async Task PlayMatch(int matchId, Type gameType, List<Type> playerTypes, GameSettings gameSettings, string logDir, Logger logger)
