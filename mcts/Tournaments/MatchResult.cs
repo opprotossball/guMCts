@@ -1,4 +1,6 @@
-﻿namespace mcts.Tournaments
+﻿using System.Collections.Generic;
+
+namespace mcts.Tournaments
 {
     public class MatchResult
     {

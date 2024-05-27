@@ -1,5 +1,7 @@
 ﻿using mcts.Bot;
 using mcts.Games.Interfaces;
+using System;
+using System.Threading.Tasks;
 
 namespace mcts.Tournaments.Bots
 {

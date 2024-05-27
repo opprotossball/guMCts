@@ -1,7 +1,10 @@
 ﻿using mcts.Bot;
 using mcts.Games.Interfaces;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace mcts.Tournaments
 {
@@ -34,7 +37,7 @@ namespace mcts.Tournaments
             SetupLogging();
             while (!HasEnded)
             {
-                if (_movesMade > _settings.maxMoves)
+                if (_movesMade > _settings.MaxMoves)
                 {
                     return new MatchResult()
                     {
@@ -92,9 +95,10 @@ namespace mcts.Tournaments
                 throw new Exception("Not enough players");
             }
             IGame position = _game.HistorylessCopy();
-            Task moveTime = Task.Delay(_settings.msPerMove);
+            int time = _settings.UnfairTime ? _settings.UnfairMsPerMove[activePlayer] : _settings.MsPerMove;
+            Task moveTime = Task.Delay(time);
             Stopwatch stopwatch = Stopwatch.StartNew();
-            Task<IMove> choosingMove = _players[activePlayer].MakeMove(position, _settings.msPerMove);
+            Task<IMove> choosingMove = _players[activePlayer].MakeMove(position, time);
             Task finished = await Task.WhenAny(moveTime, choosingMove);
             stopwatch.Stop();
             if (finished == moveTime)

@@ -2,8 +2,10 @@
 using mcts.Games.Interfaces;
 using mcts.Tournaments;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Xml;
+using System.Threading.Tasks;
 
 namespace mcts.Mcts
 {
@@ -45,7 +47,7 @@ namespace mcts.Mcts
             stalemates = 0;
             timeElapsed = 0;
             Node root = new Node(game, null);
-            while (stopwatch.ElapsedMilliseconds < msPerMove * 0.975)
+            while (stopwatch.ElapsedMilliseconds < msPerMove * 0.9)
             {
                 Iteration(root);
             }

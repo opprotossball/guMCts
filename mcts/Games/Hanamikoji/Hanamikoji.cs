@@ -1,4 +1,7 @@
 ﻿using mcts.Games.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 
 namespace mcts.Games.Hanamikoji
@@ -18,9 +21,11 @@ namespace mcts.Games.Hanamikoji
         private Stack<Geishas> deck;
         private bool firstPlayerToGo;
         private Stack<Move> moveHistory;
+        private readonly Random random;
 
         public Hanamikoji() 
         {
+            random = new Random();
             cards = new List<Geishas>();
             for (int i = 0; i < CardCounts.Length; i++)
             {
@@ -41,7 +46,7 @@ namespace mcts.Games.Hanamikoji
             firstPlayerHand = new List<Geishas>();
             secondPlayerHand = new List<Geishas>();
             // init deck
-            foreach (Geishas card in cards.OrderBy(x => Random.Shared.Next()).ToList())
+            foreach (Geishas card in cards.OrderBy(x => random.Next()).ToList())
             {
                 deck.Push(card);
             }
@@ -197,5 +202,6 @@ namespace mcts.Games.Hanamikoji
         {
             throw new NotImplementedException();
         }
+
     }
 }
